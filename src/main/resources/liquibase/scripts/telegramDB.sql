@@ -1,7 +1,7 @@
 -- liquibase formatted sql
 
--- changeset aTrf:1
-CREATE TABLE Tasks (
+-- changeset atrf:1
+CREATE TABLE NotificationTasks (
 ChatId SERIAL PRIMARY KEY,
 ResponseMessage TEXT,
 DateTime TIMESTAMP WITH TIME ZONE
