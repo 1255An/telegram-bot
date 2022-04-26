@@ -1,6 +1,10 @@
 package pro.sky.telegrambot.service;
 
+import com.pengrad.telegrambot.model.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import pro.sky.telegrambot.listener.TelegramBotUpdatesListener;
 import pro.sky.telegrambot.model.NotificationTask;
 import pro.sky.telegrambot.model.ParsingResults;
 import pro.sky.telegrambot.repository.NotificationTaskRepository;
@@ -16,9 +20,10 @@ import java.util.regex.Pattern;
 //@EnableScheduling
 @Service
 public class NotificationService {
+    private Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     private final NotificationTaskRepository notificationTaskRepository;
-    private final Pattern pattern = Pattern.compile("((\\d{2}.\\d{2}.\\d{4})|(\\btomorrow\\b|\\btoday\\b)) (at|on) (\\d{1,2}:\\d{1,2}) ((?=\\S{0}).{1,50})", Pattern.CASE_INSENSITIVE);
+    private final Pattern pattern = Pattern.compile("(\\d{2}.\\d{2}.\\d{4})\\s(\\d{2}.\\d{2})\\s(\\D)", Pattern.CASE_INSENSITIVE);
 
     public NotificationService(NotificationTaskRepository notificationTaskRepository) {
         this.notificationTaskRepository = notificationTaskRepository;
@@ -52,21 +57,21 @@ public class NotificationService {
 //    }
 
     public ParsingResults parseMessage(String text) {
+        logger.info("Method for parsing message was called");
         LocalDateTime localDateTime;
         ParsingResults parsingResults = new ParsingResults();
         Matcher matcher = pattern.matcher(text);
         if (matcher.matches()) {
-            String matcherGroup1 = matcher.group(1);
-            if (isShort(matcherGroup1)) {
-                localDateTime = produceLocalDateTime(matcher);
-            } else {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-                LocalTime time = fixLocalTime(matcher.group(5));
-                localDateTime = LocalDateTime.parse(LocalDate.parse(matcher.group(1), formatter) + "T" + time);
-            }
+            String dateTime = matcher.group(1) + " " + matcher.group(2);
+            logger.info("create datetime");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm");
+              //  LocalTime time = fixLocalTime(matcher.group(2));
+            logger.info("parsing");
+                localDateTime = LocalDateTime.parse(dateTime, formatter);
+            logger.info("parsed");
             if (localDateTime.isAfter(LocalDateTime.now())) {
                 parsingResults.setDateTime(localDateTime);
-                parsingResults.setReminderDescription(matcher.group(6).trim().replaceAll("\\s+", " "));
+                parsingResults.setReminderDescription(matcher.group(2).trim().replaceAll("\\s+", " "));
                 parsingResults.setStatus("valid");
             } else {
                 parsingResults.setStatus("time is in the past");
@@ -77,34 +82,41 @@ public class NotificationService {
         return parsingResults;
     }
 
-    private LocalTime fixLocalTime(String group) {
-        Character semiColon = group.charAt(1);
-        if(semiColon.equals(' ')){
-            group = '0' + group;
-        }
-        LocalTime time = LocalTime.parse(group);
-        return time;
-    }
 
-    private LocalDateTime produceLocalDateTime(Matcher matcher) {
-        LocalDateTime dateTime;
-        LocalDate date = LocalDate.now();
-        String gotTime = matcher.group(5);
+//    private LocalTime fixLocalTime(String group) {
+//        Character semiColon = group.charAt(1);
+//        if(semiColon.equals(' ')){
+//            group = '0' + group;
+//        }
+//        LocalTime time = LocalTime.parse(group);
+//        return time;
+//    }
 
-        LocalTime futureTime = fixLocalTime(gotTime);
-        if (matcher.group(1).equalsIgnoreCase("tomorrow")) {
-            date = date.plusDays(1);
-        }
-        dateTime = LocalDateTime.of(date, futureTime);
-        return dateTime;
-    }
+//    private LocalDateTime produceLocalDateTime(Matcher matcher) {
+//        LocalDateTime dateTime;
+//        LocalDate date = LocalDate.now();
+//        String gotTime = matcher.group(5);
+//
+//        LocalTime futureTime = fixLocalTime(gotTime);
+//        if (matcher.group(1).equalsIgnoreCase("tomorrow")) {
+//            date = date.plusDays(1);
+//        }
+//        dateTime = LocalDateTime.of(date, futureTime);
+//        return dateTime;
+//    }
+//
+//
+//    private boolean isShort(String matcherGroup1) {
+//        boolean isShort = false;
+//        if (matcherGroup1.equalsIgnoreCase("tomorrow") || matcherGroup1.equalsIgnoreCase("today")) {
+//            isShort = true;
+//        } return isShort;
+//    }
 
-
-    private boolean isShort(String matcherGroup1) {
-        boolean isShort = false;
-        if (matcherGroup1.equalsIgnoreCase("tomorrow") || matcherGroup1.equalsIgnoreCase("today")) {
-            isShort = true;
-        } return isShort;
+    public boolean isNotificationValid(String message) {
+        logger.info("Method for checking notification was called");
+        Matcher matcher = pattern.matcher(message);
+        return matcher.matches();
     }
 }
 
