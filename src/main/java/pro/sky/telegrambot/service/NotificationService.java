@@ -64,7 +64,7 @@ public class NotificationService {
         if (matcher.matches()) {
             String dateTime = matcher.group(1) + " " + matcher.group(2);
             logger.info("create datetime");
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
               //  LocalTime time = fixLocalTime(matcher.group(2));
             logger.info("parsing");
                 localDateTime = LocalDateTime.parse(dateTime, formatter);
