@@ -1,21 +1,15 @@
 package pro.sky.telegrambot.service;
 
-import com.pengrad.telegrambot.model.Message;
-import org.aspectj.weaver.ast.Not;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import pro.sky.telegrambot.listener.TelegramBotUpdatesListener;
 import pro.sky.telegrambot.model.NotificationTask;
 import pro.sky.telegrambot.model.ParsingResults;
 import pro.sky.telegrambot.repository.NotificationTaskRepository;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,17 +20,27 @@ public class NotificationService {
     private Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     private final NotificationTaskRepository notificationTaskRepository;
+    // create needed format of notification for checking and parsing users' messages
     private final Pattern pattern = Pattern.compile("([0-9\\.\\:\\s]{16})(\\s)([\\w+]+)", Pattern.CASE_INSENSITIVE);
 
     public NotificationService(NotificationTaskRepository notificationTaskRepository) {
         this.notificationTaskRepository = notificationTaskRepository;
     }
 
-    public List<NotificationTask> getNotificationTasks (LocalDateTime from, LocalDateTime to) {
-        List <NotificationTask> tasks = notificationTaskRepository.getNotificationTasks(from, to);
-        logger.info("Getting tasks from {} to {}: [{}]",from, to, tasks);
+    public void save(NotificationTask notificationTask) {
+        notificationTaskRepository.save(notificationTask);
+    }
+
+    /**
+     * Method for getting notification from repository
+     */
+
+    public List<NotificationTask> getNotificationTasks(LocalDateTime from, LocalDateTime to) {
+        List<NotificationTask> tasks = notificationTaskRepository.getNotificationTasks(from, to);
+        logger.info("Getting tasks from {} to {}: [{}]", from, to, tasks);
         if (!tasks.isEmpty()) {
             for (NotificationTask task : tasks) {
+                // receive notification description from repository
                 String notificationDescription = task.getNotificationDescription();
                 task.setNotificationDescription(notificationDescription);
             }
@@ -44,10 +48,9 @@ public class NotificationService {
         return tasks;
     }
 
-    public void save(NotificationTask notificationTask) {
-        notificationTaskRepository.save(notificationTask);
-    }
-
+    /**
+     * Parsing received notification to further saving in DB
+     */
     public ParsingResults parseMessage(String text) {
         logger.info("Method for parsing message was called");
         LocalDateTime localDateTime;
@@ -55,12 +58,10 @@ public class NotificationService {
         Matcher matcher = pattern.matcher(text);
         if (matcher.matches()) {
             String dateTime = matcher.group(1);
-            logger.info("create datetime");
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-              //  LocalTime time = fixLocalTime(matcher.group(2));
-            logger.info("parsing");
-                localDateTime = LocalDateTime.parse(dateTime, formatter);
-            logger.info("parsed");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+            localDateTime = LocalDateTime.parse(dateTime, formatter);
+            logger.info("User's message was parsed");
+            //set valid status of parsing if date isn't in the past
             if (localDateTime.isAfter(LocalDateTime.now())) {
                 parsingResults.setDateTime(localDateTime);
                 parsingResults.setNotificationDescription(matcher.group(3));
@@ -72,12 +73,6 @@ public class NotificationService {
             parsingResults.setStatus("invalid");
         }
         return parsingResults;
-    }
-
-    public boolean isNotificationValid(String message) {
-        logger.info("Method for checking notification was called");
-        Matcher matcher = pattern.matcher(message);
-        return matcher.matches();
     }
 }
 

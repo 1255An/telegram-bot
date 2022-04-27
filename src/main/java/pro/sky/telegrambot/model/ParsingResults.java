@@ -2,6 +2,7 @@ package pro.sky.telegrambot.model;
 
 import java.time.LocalDateTime;
 
+//class for store results of parsed users' notifications
 public class ParsingResults {
 
     private LocalDateTime dateTime;
