@@ -1,6 +1,7 @@
 package pro.sky.telegrambot.service;
 
 import com.pengrad.telegrambot.model.Message;
+import org.aspectj.weaver.ast.Not;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//@EnableScheduling
+
 @Service
 public class NotificationService {
     private Logger logger = LoggerFactory.getLogger(NotificationService.class);
@@ -31,8 +32,16 @@ public class NotificationService {
         this.notificationTaskRepository = notificationTaskRepository;
     }
 
-    public List<NotificationTask> findAll() {
-        return notificationTaskRepository.findAll();
+    public List<NotificationTask> getNotificationTasks (LocalDateTime from, LocalDateTime to) {
+        List <NotificationTask> tasks = notificationTaskRepository.getNotificationTasks(from, to);
+        logger.info("Getting tasts from {} to {}: [{}]",from, to, tasks);
+        if (!tasks.isEmpty()) {
+            for (NotificationTask task : tasks) {
+                String responseMessage = null;
+                task.setResponseMessage(responseMessage);
+            }
+        }
+        return tasks;
     }
 
     public void save(NotificationTask notificationTask) {
@@ -64,15 +73,6 @@ public class NotificationService {
         }
         return parsingResults;
     }
-
-    @Scheduled
-    public void remindAboutEvent () {
-        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-        List <NotificationTask> tasks = notificationTaskRepository.findAll();
-
-        for (String )
-    }
-
 
     public boolean isNotificationValid(String message) {
         logger.info("Method for checking notification was called");
