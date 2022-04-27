@@ -7,12 +7,16 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pro.sky.telegrambot.model.NotificationTask;
 import pro.sky.telegrambot.model.ParsingResults;
 import pro.sky.telegrambot.service.NotificationService;
+import pro.sky.telegrambot.service.ScheduleService;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 
@@ -23,12 +27,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private final TelegramBot telegramBot;
     private final NotificationService notificationService;
+    private final ScheduleService scheduleService;
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, NotificationService notificationService) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, NotificationService notificationService, ScheduleService scheduleService) {
         this.telegramBot = telegramBot;
         this.notificationService = notificationService;
-
+        this.scheduleService = scheduleService;
     }
+
 
     @PostConstruct
     public void init() {
@@ -48,20 +54,23 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 } else {
                     handleMessage(update, chatId);
                 }
-                }
+            }
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
     private void handleMessage(Update update, long chatId) {
-        ParsingResults parsingResults = notificationService.parseMessage(update.message().text());
+        String userMessage = update.message().text();
+        long id = update.message().chat().id();
+        //     SendMessage message = new SendMessage(update.message().chat().id(), userMessage)
+        ParsingResults parsingResults = notificationService.parseMessage(userMessage);
         if (parsingResults.getStatus().equals("valid")) {
-            String responseMessage = parsingResults.getReminderDescription();
-            NotificationTask notificationTask = new NotificationTask(chatId, responseMessage,
+            String responseMessage = parsingResults.getNotificationDescription();
+            NotificationTask notificationTask = new NotificationTask(id, chatId, responseMessage,
                     parsingResults.getDateTime());
             notificationService.save(notificationTask);
             logger.info("Saved");
-            telegramBot.execute(new SendMessage(chatId, "Sucess!"));
+            telegramBot.execute(new SendMessage(chatId, "Success!"));
         } else if (parsingResults.getStatus().equals("time is in the past")) {
             telegramBot.execute(new SendMessage(chatId, "Time is in the past"));
         } else {
@@ -85,6 +94,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             telegramBot.execute(outputMessage);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Scheduled(cron = "0 0/1 * * * *")
+    public void scheduleHandler() {
+        LocalDateTime now = LocalDateTime.now();
+        List<NotificationTask> tasks = notificationService.getNotificationTasks(now.truncatedTo(ChronoUnit.MINUTES), now);
+        logger.info("Got {} tasks to process", tasks.size());
+        for (NotificationTask task : tasks) {
+            SendMessage message = new SendMessage(task.getChatId(), "You have a notification: " + task.getNotificationDescription());
+            logger.info("Message was created with chatId {} and message {}", task.getChatId(), task.getNotificationDescription());
+            telegramBot.execute(message);
         }
     }
 }

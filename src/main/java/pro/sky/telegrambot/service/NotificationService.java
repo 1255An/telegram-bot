@@ -34,11 +34,11 @@ public class NotificationService {
 
     public List<NotificationTask> getNotificationTasks (LocalDateTime from, LocalDateTime to) {
         List <NotificationTask> tasks = notificationTaskRepository.getNotificationTasks(from, to);
-        logger.info("Getting tasts from {} to {}: [{}]",from, to, tasks);
+        logger.info("Getting tasks from {} to {}: [{}]",from, to, tasks);
         if (!tasks.isEmpty()) {
             for (NotificationTask task : tasks) {
-                String responseMessage = null;
-                task.setResponseMessage(responseMessage);
+                String notificationDescription = task.getNotificationDescription();
+                task.setNotificationDescription(notificationDescription);
             }
         }
         return tasks;
@@ -63,7 +63,7 @@ public class NotificationService {
             logger.info("parsed");
             if (localDateTime.isAfter(LocalDateTime.now())) {
                 parsingResults.setDateTime(localDateTime);
-                parsingResults.setReminderDescription(matcher.group(3));
+                parsingResults.setNotificationDescription(matcher.group(3));
                 parsingResults.setStatus("valid");
             } else {
                 parsingResults.setStatus("time is in the past");

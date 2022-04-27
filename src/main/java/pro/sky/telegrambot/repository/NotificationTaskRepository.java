@@ -12,6 +12,6 @@ import java.util.List;
 @Repository
 public interface NotificationTaskRepository extends JpaRepository<NotificationTask, Long> {
 
-    @Query("SELECT n FROM NotificationTask n WHERE n.DateTime >= :from AND n.DateTime <= :to")
+    @Query("SELECT n FROM NotificationTask n WHERE n.dateTime >= :from AND n.dateTime <= :to")
     List<NotificationTask> getNotificationTasks(@Param ("from") LocalDateTime from, @Param ("to") LocalDateTime to);
 }
