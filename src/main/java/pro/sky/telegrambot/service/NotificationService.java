@@ -80,18 +80,6 @@ public class NotificationService {
 
         return parsingResults;
     }
-
-//    private void checkIsDateTimeValid (String dateTime) {
-//        Pattern dateTimePattern = Pattern.compile("([0-9\\.\\:\\s]{16})(\\s)([\\w+]+)", Pattern.CASE_INSENSITIVE);
-//        Matcher dateTimeMatcher = pattern.matcher(dateTime);
-//        if (dateTimeMatcher.matches()) {
-//            String days = dateTimeMatcher.group(1);
-//
-//            String time = dateTimeMatcher.group(2);
-//
-//
-//        }
-//    }
 }
 
 
