@@ -95,17 +95,24 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         long id = update.message().chat().id();
         ParsingResults parsingResults = notificationService.parseMessage(userMessage);
         //save received notification in DB if it has valid format
-        if (parsingResults.getStatus().equals("valid")) {
-            String responseMessage = parsingResults.getNotificationDescription();
-            NotificationTask notificationTask = new NotificationTask(id, chatId, responseMessage,
-                    parsingResults.getDateTime());
-            notificationService.save (notificationTask);
-            logger.info("Notification task was successfully saved");
-            telegramBot.execute(new SendMessage(chatId, "Great! I'll notify you about your event"));
-        } else if (parsingResults.getStatus().equals("time is in the past")) {
-            telegramBot.execute(new SendMessage(chatId, "Entered time has already passed. Please, type your event again, or type /help and I'll help you"));
-        } else {
-            telegramBot.execute(new SendMessage(chatId, "Format of event should be \n DD.MM.YYYY HH:MM TEXT"));
+        switch (parsingResults.getStatus()) {
+            case "valid":
+                String responseMessage = parsingResults.getNotificationDescription();
+                NotificationTask notificationTask = new NotificationTask(id, chatId, responseMessage,
+                        parsingResults.getDateTime());
+                notificationService.save(notificationTask);
+                logger.info("Notification task was successfully saved");
+                telegramBot.execute(new SendMessage(chatId, "Great! I'll notify you about your event"));
+                break;
+            case "time is in the past":
+                telegramBot.execute(new SendMessage(chatId, "Entered time has already passed. Please, type your event again, or type /help and I'll help you"));
+                break;
+            case "incorrect dateTime":
+                telegramBot.execute(new SendMessage(chatId, "Date must contain value from 1 to 31, hours - from 0 to 23, minutes - from 0 to 59. Please, check!"));
+                break;
+            default:
+                telegramBot.execute(new SendMessage(chatId, "Format of event should be \n DD.MM.YYYY HH:MM TEXT"));
+                break;
         }
     }
 

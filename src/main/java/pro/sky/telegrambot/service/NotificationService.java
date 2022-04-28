@@ -10,6 +10,7 @@ import pro.sky.telegrambot.repository.NotificationTaskRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,21 +60,38 @@ public class NotificationService {
         if (matcher.matches()) {
             String dateTime = matcher.group(1);
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-            localDateTime = LocalDateTime.parse(dateTime, formatter);
-            logger.info("User's message was parsed");
-            //set valid status of parsing if date isn't in the past
-            if (localDateTime.isAfter(LocalDateTime.now())) {
-                parsingResults.setDateTime(localDateTime);
-                parsingResults.setNotificationDescription(matcher.group(3));
-                parsingResults.setStatus("valid");
-            } else {
-                parsingResults.setStatus("time is in the past");
+            try {
+                localDateTime = LocalDateTime.parse(dateTime, formatter);
+                logger.info("User's message was parsed");
+                //set valid status of parsing if date isn't in the past
+                if (localDateTime.isAfter(LocalDateTime.now())) {
+                    parsingResults.setDateTime(localDateTime);
+                    parsingResults.setNotificationDescription(matcher.group(3));
+                    parsingResults.setStatus("valid");
+                } else {
+                    parsingResults.setStatus("time is in the past");
+                }
+            } catch (DateTimeParseException e) {
+                parsingResults.setStatus("incorrect dateTime");
             }
         } else {
             parsingResults.setStatus("invalid");
         }
+
         return parsingResults;
     }
+
+//    private void checkIsDateTimeValid (String dateTime) {
+//        Pattern dateTimePattern = Pattern.compile("([0-9\\.\\:\\s]{16})(\\s)([\\w+]+)", Pattern.CASE_INSENSITIVE);
+//        Matcher dateTimeMatcher = pattern.matcher(dateTime);
+//        if (dateTimeMatcher.matches()) {
+//            String days = dateTimeMatcher.group(1);
+//
+//            String time = dateTimeMatcher.group(2);
+//
+//
+//        }
+//    }
 }
 
 
